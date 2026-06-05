@@ -41,11 +41,11 @@ class ChatAgent:
                 full_reply = ""
                 for chunk in response:
                     token = chunk.choices[0].delta.content or ""
-                    #print(token, end="",flush="true")
+                    print(token, end="",flush="true")
                     full_reply += token
                 
-                #for char in full_reply:
-                #    print("\b \b",end="",flush="true")
+                for char in full_reply:
+                    print("\b \b",end="",flush="true")
                 
                 md = Markdown(full_reply)
                 self.console.print(md)
