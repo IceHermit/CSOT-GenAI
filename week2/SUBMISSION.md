@@ -28,3 +28,24 @@ requests
 - Chat Transcript Saving, which allows the user to save the chat history in a local file so that they can look at it later.
 
 # How it was made
+
+Builds 1, 2, and 3, helped teach the required modules which were then commpiled into `agent.py` to create a full-fledged ResearchBot.
+
+- Build 1 taught tool calling, which was first done by asking the model to print a specific format to call a tool
+```
+<tool_call>
+{"name": "tool_name", "arguments": {"arg1": "val1"}}
+</tool_call>
+```
+then repeatedly looking for such tool calls in the model's response using regex
+- Later this was replaced with OpenAI's native solution for tool calling, which is a far cleaner way to handle this problem.
+- A tool dispatcher was made next, which holds the data structure mapping a tool call to the corresponding function.
+- 3 tools were implemented: `web_search`, `discover_papers`, `get_paper_content`
+- `web_search` uses the Serper API to search the web and return results (check the first preview image)
+- `discover_papers` and `get_paper_content` use the AlphaXiv MCP server to look through research papers (check the second preview image)
+
+- Next up was presentation, a TUI was composed using the `textual` module. I needed a lot of help from Google Gemini to complete the TUI frontend.
+- Two main windows were set up: Chat-log and Tool-log. The Chat-log showed all the messages from the user and ResearchBot, whereas the Tool-log showed all the tool calls made by the bot.
+- 4 keybinds were added, `^Q` = quit, `^L` = clear display, `^K` = clear history, `^S` = save transcript.
+- The keybinds were made functional, and the `save transcript` function was implemented by writing the chat log to a local file.
+- Everything was then finalized, and previous week's gitHub repository was updated to include week-2's project as well.
