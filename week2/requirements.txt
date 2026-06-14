@@ -1,0 +1,4 @@
+opanai
+dotenv
+textual
+requests
