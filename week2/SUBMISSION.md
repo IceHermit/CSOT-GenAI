@@ -10,12 +10,13 @@ This week's objective was to make a Perplexity-style Bot which is capable of sea
 
 # Setup
 
-- You need the following modules installed on your machine
+- You need the following modules installed on your machine (call `pip install -r requirements.txt`)
 ```
 opanai
 dotenv
 textual
 requests
+beautifulsoup4
 ```
 
 - You also need an OpenAI API key and a Serper API key.
@@ -40,9 +41,10 @@ Builds 1, 2, and 3, helped teach the required modules which were then commpiled 
 then repeatedly looking for such tool calls in the model's response using regex
 - Later this was replaced with OpenAI's native solution for tool calling, which is a far cleaner way to handle this problem.
 - A tool dispatcher was made next, which holds the data structure mapping a tool call to the corresponding function.
-- 3 tools were implemented: `web_search`, `discover_papers`, `get_paper_content`
-- `web_search` uses the Serper API to search the web and return results (check the first preview image)
-- `discover_papers` and `get_paper_content` use the AlphaXiv MCP server to look through research papers (check the second preview image)
+- 4 tools were implemented: `web_search`, `web_fetch`, `discover_papers`, `get_paper_content`.
+- `web_search` uses the Serper API to search the web and return results (check the first preview image).
+- `web_fetch` handles requests and HTML cleanup using the `BeautifulSoup` module.
+- `discover_papers` and `get_paper_content` use the AlphaXiv MCP server to look through research papers (check the second preview image).
 
 - Next up was presentation, a TUI was composed using the `textual` module. I needed a lot of help from Google Gemini to complete the TUI frontend.
 - Two main windows were set up: Chat-log and Tool-log. The Chat-log showed all the messages from the user and ResearchBot, whereas the Tool-log showed all the tool calls made by the bot.
