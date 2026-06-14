@@ -3,7 +3,6 @@ import sys
 import json
 from datetime import datetime
 import requests
-from bs4 import BeautifulSoup
 from openai import OpenAI
 from dotenv import load_dotenv
 from textual.app import App, ComposeResult
@@ -37,20 +36,6 @@ TOOLS = [
                     "query": {"type": "string", "description": "The exact search query terms."}
                 },
                 "required": ["query"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "web_fetch",
-            "description": "Fetch the raw plaintext contents of a specific URL to gather comprehensive source grounding data.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "url": {"type": "string", "description": "The complete HTTP or HTTPS link string."}
-                },
-                "required": ["url"],
             },
         },
     },
@@ -113,23 +98,7 @@ def web_search(query: str) -> dict:
     
     except Exception as e:
         return {"error": f"Serper operations aborted: {str(e)}"}
-
-
-def web_fetch(url: str) -> dict:
-    try:
-        response = requests.get(url, headers=REQUEST_HEADERS, timeout=10)
-        if response.status_code != 200:
-            return {"error": f"Target document unreachable. HTTP error status: {response.status_code}"}
-            
-        soup = BeautifulSoup(response.text, "html.parser")
-        for metadata in soup(["script", "style", "header", "footer", "nav"]):
-            metadata.decompose()
-            
-        text_payload = soup.get_text(separator=" ", strip=True)
-        return {"url": url, "content": text_payload[:3500] + "..." if len(text_payload) > 3500 else text_payload}
-    except Exception as e:
-        return {"error": f"Scraper execution crash trace: {str(e)}"}
-
+    
 
 def discover_papers(query: str) -> dict:
     try:
@@ -161,7 +130,6 @@ def get_paper_content(arxiv_id: str) -> dict:
 
 TOOL_REGISTRY = {
     "web_search": web_search,
-    "web_fetch": web_fetch,
     "discover_papers": discover_papers,
     "get_paper_content": get_paper_content,
 }
@@ -179,6 +147,7 @@ def dispatch_tool(tool_call) -> str:
         return json.dumps({"error": str(e)})
 
 
+
 def trim_history(messages: list, max_turns: int) -> list:
     if len(messages) <= 1:
         return messages
@@ -188,6 +157,7 @@ def trim_history(messages: list, max_turns: int) -> list:
     if len(chat_history) > max_elements:
         chat_history = chat_history[-max_elements:]
     return [system_msg] + chat_history
+
 
 
 class ResearchBotTUI(App):
@@ -228,14 +198,12 @@ class ResearchBotTUI(App):
         Binding("ctrl+q", "quit", "Quit"),
     ]
 
-  
     def __init__(self):
         super().__init__()
         self.messages = [
             {"role": "system", "content": "You are a world-class Perplexity-style research tool. Answer questions by combining broad web queries via web_search with strict academic preprint discovery via discover_papers. Synthesise facts into a cleanly structured, cited, and comprehensive output answer."}
         ]
 
-  
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with Horizontal(id="workspace"):
