@@ -2,3 +2,4 @@ opanai
 dotenv
 textual
 requests
+beautifulsoup4
