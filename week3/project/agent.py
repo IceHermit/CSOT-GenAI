@@ -1,6 +1,3 @@
-"""
-agent.py — Core UI-Agnostic LLM Workspace Pipeline
-"""
 import os
 import sys
 import json
