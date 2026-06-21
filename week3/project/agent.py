@@ -1,3 +1,6 @@
+"""
+agent.py — Core UI-Agnostic LLM Workspace Pipeline
+"""
 import os
 import sys
 import json
@@ -17,7 +20,10 @@ client = OpenAI(
     api_key=os.environ.get("OPENROUTER_API_KEY"),
 )
 
-MODEL = "openai/gpt-oss-120b:free"
+PRIMARY_MODEL = "openai/gpt-oss-120b:free"
+FALLBACK_MODEL = "google/gemini-2.5-flash:free"  # Resilient model bypass route for 429 errors
+
+# Resolve absolute workspace base target path via .env
 WORKSPACE_ROOT = os.environ.get("WORKSPACE_ROOT", ".")
 SESSIONS_DIR = os.path.abspath(os.path.join(WORKSPACE_ROOT, "sessions"))
 os.makedirs(SESSIONS_DIR, exist_ok=True)
@@ -45,18 +51,19 @@ class Agent:
         self.session_id = session_id or uuid.uuid4().hex[:8]
         self.messages = []
         self.resumed_topic = None
+        self.active_model = PRIMARY_MODEL
         self.load_or_create_session()
 
     def load_or_create_session(self):
         self.session_file = os.path.join(SESSIONS_DIR, f"{self.session_id}.json")
-        base_prompt = "You are a world-class Perplexity-style research tool. Answer questions combining web search, academic preprints, and file tools. Be concise in your answers."
-
+        base_prompt = "You are a world-class Perplexity-style research tool. Answer questions combining web search, academic preprints, and file tools."
+        
         for rules_path in ("AGENTS.md", ".agent/AGENTS.md"):
             if os.path.isfile(rules_path):
                 with open(rules_path, "r", encoding="utf-8") as f:
                     base_prompt += f"\n\n## Project Rules\n{f.read()}"
                 break
-        
+
         if os.path.exists(self.session_file):
             with open(self.session_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -109,7 +116,11 @@ class Agent:
         max_loops = 8
         for _ in range(max_loops):
             try:
-                response = client.chat.completions.create(model=MODEL, messages=self.messages, tools=TOOLS)
+                response = client.chat.completions.create(
+                    model=self.active_model, 
+                    messages=self.messages, 
+                    tools=TOOLS
+                )
                 msg = response.choices[0].message
                 finish = response.choices[0].finish_reason
 
@@ -144,11 +155,18 @@ class Agent:
                     return msg.content
 
             except Exception as e:
-                err_msg = f"Network pipeline loop exception raised: {str(e)}"
+                err_str = str(e)
+                # Catch rate limits (429) on the primary model and trigger the fallback strategy
+                if "429" in err_str and self.active_model == PRIMARY_MODEL:
+                    self._emit("error", f"Rate Limit 429 caught. Dynamically failing over to: {FALLBACK_MODEL}")
+                    self.active_model = FALLBACK_MODEL
+                    continue
+                
+                err_msg = f"Network pipeline execution loop crashed: {err_str}"
                 self._emit("error", err_msg)
                 return err_msg
+                
         return "Iteration depth cutoff triggered before final convergence answer reached."
-
 
 class REPLAgent(Agent):
     def _emit(self, log_type: str, text: str):
@@ -185,7 +203,6 @@ if __name__ == "__main__":
             target_session = args[idx + 1]
             args = [a for i, a in enumerate(args) if i not in (idx, idx + 1)]
             
-    
     if "--tui" in args:
         from tui import TUIAgent
         TUIAgent(session_id=target_session).run()
