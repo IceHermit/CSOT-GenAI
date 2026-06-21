@@ -1,4 +1,4 @@
-opanai
+openai
 dotenv
 textual
 requests
