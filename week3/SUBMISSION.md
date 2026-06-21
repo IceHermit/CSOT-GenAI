@@ -21,7 +21,7 @@ Single Query Mode:
 
 - You need the following modules installed on your machine (call `pip install -r requirements.txt`)
 ```
-opanai
+openai
 dotenv
 textual
 requests
