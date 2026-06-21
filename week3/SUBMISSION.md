@@ -4,6 +4,17 @@ This week's objective was to improve last week's ResearchBot and introduce featu
 
 # Preview
 
+TUI Mode:
+<img width="1814" height="798" alt="image" src="https://github.com/user-attachments/assets/97e17263-3719-4823-9e91-867f64320b8f" />
+
+REPL Mode:
+<img width="1337" height="574" alt="image" src="https://github.com/user-attachments/assets/858a4943-66fa-4649-bfcf-dd8b26940add" />
+
+Resuming Previous Sessions:
+<img width="1494" height="339" alt="image" src="https://github.com/user-attachments/assets/e5b22c4b-4c34-4d4e-9b1c-8427d2bd0722" />
+
+Single Query Mode:
+<img width="1128" height="150" alt="image" src="https://github.com/user-attachments/assets/ff6403ea-5119-4948-9bd9-ce1d0e66a8f6" />
 
 
 # Setup
@@ -37,7 +48,4 @@ beautifulsoup4
 A large part of this week's work was about cleaning up last week's advancements, and organizing them in different files to make the program more modular. This makes it easier to add more features in the future, as every new feature is just a new script that you could plug in to the existing script. <br>
 A great example of this is separating the backend and frontend: `agent.py` holds the core code which runs the chatbot, meanwhile `tui.py` simply references this core code and gives it a frontend. This also means `agent.py` can run on its own via the command line, ie. the REPL method. 
 
-The other big feature added this week was the ability to save and load sessions, which is done by simply dumping the json data of the chat history to a local file, and reading from it later. This is done with simple file I/O
-
-# Challenges
-
+The other big feature added this week was the ability to save and load sessions, which is done by simply dumping the json data of the chat history to a local file, and reading from it later. This is done with simple file I/O.
