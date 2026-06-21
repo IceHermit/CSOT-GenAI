@@ -51,6 +51,12 @@ class Agent:
         self.session_file = os.path.join(SESSIONS_DIR, f"{self.session_id}.json")
         base_prompt = "You are a world-class Perplexity-style research tool. Answer questions combining web search, academic preprints, and file tools. Be concise in your answers."
 
+        for rules_path in ("AGENTS.md", ".agent/AGENTS.md"):
+            if os.path.isfile(rules_path):
+                with open(rules_path, "r", encoding="utf-8") as f:
+                    base_prompt += f"\n\n## Project Rules\n{f.read()}"
+                break
+        
         if os.path.exists(self.session_file):
             with open(self.session_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
