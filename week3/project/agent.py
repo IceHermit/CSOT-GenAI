@@ -1,6 +1,3 @@
-"""
-agent.py — Core UI-Agnostic LLM Workspace Pipeline
-"""
 import os
 import sys
 import json
@@ -21,9 +18,8 @@ client = OpenAI(
 )
 
 PRIMARY_MODEL = "openai/gpt-oss-120b:free"
-FALLBACK_MODEL = "google/gemini-2.5-flash:free"  # Resilient model bypass route for 429 errors
+FALLBACK_MODEL = "google/gemini-2.5-flash:free" 
 
-# Resolve absolute workspace base target path via .env
 WORKSPACE_ROOT = os.environ.get("WORKSPACE_ROOT", ".")
 SESSIONS_DIR = os.path.abspath(os.path.join(WORKSPACE_ROOT, "sessions"))
 os.makedirs(SESSIONS_DIR, exist_ok=True)
@@ -156,7 +152,6 @@ class Agent:
 
             except Exception as e:
                 err_str = str(e)
-                # Catch rate limits (429) on the primary model and trigger the fallback strategy
                 if "429" in err_str and self.active_model == PRIMARY_MODEL:
                     self._emit("error", f"Rate Limit 429 caught. Dynamically failing over to: {FALLBACK_MODEL}")
                     self.active_model = FALLBACK_MODEL
@@ -167,6 +162,7 @@ class Agent:
                 return err_msg
                 
         return "Iteration depth cutoff triggered before final convergence answer reached."
+
 
 class REPLAgent(Agent):
     def _emit(self, log_type: str, text: str):
@@ -183,15 +179,83 @@ class REPLAgent(Agent):
         if self.resumed_topic:
             print(f"[Memory Check] Resumed: {self.resumed_topic}")
         print(f"ResearchDesk REPL Environment Shell Active. [Session ID: {self.session_id}]")
+        print("Available workspace commands: /sessions, /resume <id>, exit")
+        
         while True:
             try:
                 inp = input("\n> ").strip()
-                if not inp: continue
-                if inp.lower() in ["quit", "exit"]: break
+                if not inp: 
+                    continue
+                
+                if inp.startswith("/"):
+                    parts = inp.split(maxsplit=1)
+                    command = parts[0].lower()
+                    
+                    if command == "/sessions":
+                        if not os.path.exists(SESSIONS_DIR):
+                            print("No session records found matching the workspace.")
+                            continue
+                        files = [f for f in os.listdir(SESSIONS_DIR) if f.endswith(".json")]
+                        if not files:
+                            print("No active historical context sessions found on disk.")
+                            continue
+                        
+                        print("\n--- Available Tracked Sessions ---")
+                        for file_name in sorted(files):
+                            sid = file_name.replace(".json", "")
+                            marker = " (Active)" if sid == self.session_id else ""
+                            
+                            topic = "Empty Workspace Context"
+                            try:
+                                with open(os.path.join(SESSIONS_DIR, file_name), "r", encoding="utf-8") as sf:
+                                    sdata = json.load(sf)
+                                    for msg in sdata.get("messages", []):
+                                        if msg.get("role") == "user":
+                                            content = msg.get("content", "")
+                                            topic = content[:45] + "..." if len(content) > 45 else content
+                                            break
+                            except Exception:
+                                pass
+                            print(f"  ID: {sid:<10} | Topic: {topic}{marker}")
+                        continue
+                    
+                    elif command == "/resume":
+                        if len(parts) < 2:
+                            print("Syntax error. Usage layout: /resume <session_id>")
+                            continue
+                        
+                        target_id = parts[1].strip()
+                        target_file = os.path.join(SESSIONS_DIR, f"{target_id}.json")
+                        
+                        if not os.path.exists(target_file):
+                            print(f"Error: Session sequence ID '{target_id}' could not be located on disk.")
+                            continue
+                        
+                        self.session_id = target_id
+                        self.messages = []
+                        self.resumed_topic = None
+                        self.load_or_create_session()
+                        
+                        if self.resumed_topic:
+                            print(f"Resumed: {self.resumed_topic}")
+                        else:
+                            print(f"Switched over context. Context ID: {self.session_id}")
+                        continue
+                    
+                    else:
+                        print(f"Unknown workspace macro action command line choice: {command}")
+                        continue
+
+                if inp.lower() in ["quit", "exit"]: 
+                    break
+                    
                 ans = self.chat(inp)
                 print(f"\nAI:\n{ans}")
+                
             except (KeyboardInterrupt, EOFError):
+                print("\nExiting ResearchDesk REPL shell loop environment.")
                 break
+
 
 if __name__ == "__main__":
     args = sys.argv[1:]
